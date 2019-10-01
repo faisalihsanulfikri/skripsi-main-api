@@ -7,6 +7,9 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 
 use App\User;
+use App\Website;
+use DB;
+use Config;
 
 use Validator;
 
@@ -77,8 +80,69 @@ class AuthController extends Controller
         return $this->authToken();
     }
 
+    public function connection()
+    {
+        $body = $this->request->all();
+
+        $webname = $body['name'];
+        $database = $body['database'];
+        $username = $body['username'];
+        $password = $body['password'];
+
+        Config::set('database.connections.tenant.database', $database);
+        Config::set('database.connections.tenant.username', $username);
+        Config::set('database.connections.tenant.password', $password);
+
+        DB::purge('tenant');
+        DB::reconnect('tenant');
+
+        return response()->json([
+            'success' => 1,
+            'message' => "Berhasil terkoneksi dengan ".$webname
+        ]);
+    }
+
     public function test()
     {
-        return $this->authToken();
+
+        $newDB = [
+            "database" => "patisa",
+            "username" => "root",
+            "password" => ""
+        ];
+
+        $newDB2 = [
+            "database" => "denayla_db",
+            "username" => "root",
+            "password" => ""
+        ];
+        
+        // dd(\Config::get('database.connections'));
+        Config::set('database.connections.tenant.database', $newDB['database']);
+        Config::set('database.connections.tenant.username', $newDB['username']);
+        Config::set('database.connections.tenant.password', $newDB['password']);
+        
+        
+        DB::purge('tenant');
+        DB::reconnect('tenant');
+
+        
+        // dd(\DB::connection('tenant'));
+
+        $patisa = DB::connection('tenant')->table('barang')->get();
+
+        Config::set('database.connections.tenant.database', $newDB2['database']);
+        Config::set('database.connections.tenant.username', $newDB2['username']);
+        Config::set('database.connections.tenant.password', $newDB2['password']);
+
+        DB::purge('tenant');
+        DB::reconnect('tenant');
+
+        $denayla = DB::connection('tenant')->table('customer')->get();
+
+        return response()->json([
+            'patisa' => $patisa,
+            'denayla' => $denayla
+        ]);
     }
 }
