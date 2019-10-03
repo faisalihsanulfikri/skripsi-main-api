@@ -15,7 +15,7 @@ use Illuminate\Http\Request;
 
 Route::post('/auth/login', 'Api\AuthController@login');
 Route::post('/auth/register', 'Api\AuthController@register');
-Route::get('/test', 'Api\AuthController@test');
+Route::get('/get/users', 'Api\UserController@index');
 
 // route with access token
 Route::group([
