@@ -1,0 +1,6 @@
+[16-Oct-2019 13:06:57 UTC] PHP Warning:  shell_exec() has been disabled for security reasons in /home/berkreat/public_html/main-api/vendor/nesbot/carbon/bin/upgrade-carbon on line 23
+[16-Oct-2019 13:06:57 UTC] PHP Fatal error:  Uncaught Error: Class 'Composer\Composer' not found in /home/berkreat/public_html/main-api/vendor/nesbot/carbon/src/Carbon/Upgrade.php:131
+Stack trace:
+#0 /home/berkreat/public_html/main-api/vendor/nesbot/carbon/bin/upgrade-carbon(28): Carbon\Upgrade::upgrade()
+#1 {main}
+  thrown in /home/berkreat/public_html/main-api/vendor/nesbot/carbon/src/Carbon/Upgrade.php on line 131
