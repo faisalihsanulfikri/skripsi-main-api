@@ -14,3 +14,7 @@
 Route::get('/', function () {
     return "main-api";
 });
+
+Auth::routes();
+
+Route::get('/home', 'HomeController@index')->name('home');
