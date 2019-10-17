@@ -12,7 +12,7 @@
 */
 
 Route::get('/', function () {
-    return "main-api";
+    return "main-server";
 });
 
 Auth::routes();
