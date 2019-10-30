@@ -18,6 +18,8 @@ Route::post('/auth/register', 'Api\AuthController@register');
 Route::get('/get/users', 'Api\UserController@index');
 Route::get('/get/website/{id}', 'Api\WebsiteController@getByUserId');
 
+Route::get('/get/cryptograpghy/encryption', 'Api\CryptographyController@encryption');
+
 // route with access token
 Route::group([
     'middleware' => 'auth:api'
