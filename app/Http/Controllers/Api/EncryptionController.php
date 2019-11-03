@@ -5,7 +5,7 @@ namespace App\Http\Controllers\api;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 
-class CryptographyController extends Controller
+class EncryptionController extends Controller
 {
     public function plaintextToHex($plaintext)
     {
@@ -35,6 +35,19 @@ class CryptographyController extends Controller
         }
 
         return $cipherkeyHex;
+    }
+
+    public function ciphertext($state)
+    {
+        $k = 0;
+        for ($i=0; $i < 4; $i++) { 
+            for ($j=0; $j < 4; $j++) { 
+                $ciphertext[$k] = $state[$i][$j];
+                $k++;
+            }
+        }
+
+        return implode("",$ciphertext);
     }
 
     public function xor($state, $roundKey)
@@ -168,40 +181,8 @@ class CryptographyController extends Controller
         return $shiftRows;
     }
 
-    public function mixColumn($state)
-    {
-        $polinomMatrix = $this->polinomMatrix();
-
-        for ($i=0; $i < 4; $i++) { 
-            for ($j=0; $j < 4; $j++) { 
-                $mixPolinomMatrix[$i][$j] = $polinomMatrix[$j][$i];
-            }
-        }
-
-        for ($i=0; $i < 4; $i++) {
-            $mixState = []; 
-            for ($j=0; $j < 4; $j++) {
-                $mixState[0][$j] = $state[$i][$j];
-            }
-
-            $dataMixColumn[$i] = array(
-                'state' => $mixState,
-                'matrix' => $mixPolinomMatrix
-            );
-        }
-
-        for ($i=0; $i < 4; $i++) { 
-            $mixColumn[$i] = $this->multiply($dataMixColumn[$i]);
-        }
-
-        return $mixColumn;
-    }
-
     public function newMixColumn($state)
     {
-        // from left echo substr("Hello world",0,1);
-        // from right echo substr("Hello world",-1);
-
         $mix = [];
 
         // first rows
@@ -361,7 +342,7 @@ class CryptographyController extends Controller
             $mix[$i][2] = $mixLeft[$i][2].$mixRight[$i][2];
         }
 
-        // third rows
+        // fourth rows
         for ($i=0; $i < 4; $i++) {
             for ($j=0; $j < 4; $j++) {
                 if ($j < 3) {
@@ -420,12 +401,133 @@ class CryptographyController extends Controller
         return $mix;
     }
 
-    public function encryption()
+    public function keySchedule($key, $round)
     {
-        $plaintext = 'faisalihsanul123';
-        $cipherkey = 'qwerty123456wasd';
+        for ($i=0; $i < 4; $i++) { 
+            for ($j=0; $j < 4; $j++) { 
+                if ($i == 0 && $j == 0) {
+                    $part = substr($key[$i][$j],0,1);
+                    $getRound = substr($round,0,1);
+                    $sub = substr($this->sBox($key[$i+3][$j+1]),0,1);
+                    $subSchedule = $this->XOR4($sub.$part);
+                    $keyLSchedule[$i][$j] = $this->XOR4($subSchedule.$getRound);
+                }
+
+                if ($i == 0 && $j > 0 && $j < 3) {
+                    $part = substr($key[$i][$j],0,1);
+                    $sub = substr($this->sBox($key[$i+3][$j+1]),0,1);
+                    $keyLSchedule[$i][$j] = $this->XOR4($sub.$part);
+                }
+
+                if ($i == 0 && $j == 3) {
+                    $part = substr($key[$i][$j],0,1);
+                    $sub = substr($this->sBox($key[$i+3][$j-3]),0,1);
+                    $keyLSchedule[$i][$j] = $this->XOR4($sub.$part);
+                }
+
+                if ($i > 0) {
+                    $before = substr($keyLSchedule[$i-1][$j],0,1);
+                    $part = substr($key[$i][$j],0,1);
+                    $keyLSchedule[$i][$j] = $this->XOR4($before.$part);
+                }
+            }
+        }
+
+        for ($i=0; $i < 4; $i++) { 
+            for ($j=0; $j < 4; $j++) { 
+                if ($i == 0 && $j == 0) {
+                    $part = substr($key[$i][$j],-1);
+                    $getRound = substr($round,-1);
+                    $sub = substr($this->sBox($key[$i+3][$j+1]),-1);
+                    $subSchedule = $this->XOR4($sub.$part);
+                    $keyRSchedule[$i][$j] = $this->XOR4($subSchedule.$getRound);
+                }
+
+                if ($i == 0 && $j > 0 && $j < 3) {
+                    $part = substr($key[$i][$j],-1);
+                    $sub = substr($this->sBox($key[$i+3][$j+1]),-1);
+                    $keyRSchedule[$i][$j] = $this->XOR4($sub.$part);
+                }
+
+                if ($i == 0 && $j == 3) {
+                    $part = substr($key[$i][$j],-1);
+                    $sub = substr($this->sBox($key[$i+3][$j-3]),-1);
+                    $keyRSchedule[$i][$j] = $this->XOR4($sub.$part);
+                }
+
+                if ($i > 0) {
+                    $before = substr($keyRSchedule[$i-1][$j],-1);
+                    $part = substr($key[$i][$j],-1);
+                    $keyRSchedule[$i][$j] = $this->XOR4($before.$part);
+                }
+            }
+        }
+
+        for ($i=0; $i < 4; $i++) { 
+            for ($j=0; $j < 4; $j++) { 
+                if ($i == 0 && $j == 0) {
+                    $keySchedule[$i][$j] = $keyLSchedule[$i][$j].$keyRSchedule[$i][$j];
+                }
+                if ($i == 0 && $j > 0 && $j < 3) {
+                    $keySchedule[$i][$j] = $keyLSchedule[$i][$j].$keyRSchedule[$i][$j];
+                }
+                if ($i == 0 && $j == 3) {
+                    $keySchedule[$i][$j] = $keyLSchedule[$i][$j].$keyRSchedule[$i][$j];
+                }
+                if ($i > 0) {
+                    $keySchedule[$i][$j] = $keyLSchedule[$i][$j].$keyRSchedule[$i][$j];
+                }
+                
+            }
+        }
+        
+        return $keySchedule;
+    }
+
+    public function encryption(Request $request)
+    {
+        $plaintext = $request->plaintext;
+        $cipherkey = $request->cipherkey;
+
+        // validation plaintext
+        if (!$request->plaintext) {
+            return response()->json([
+                'success' => '0',
+                'plaintext' => 'plaintext tidak ditemukan.'
+            ]);
+        } elseif (strlen($request->plaintext) != 16) {
+            return response()->json([
+                'success' => '0',
+                'plaintext' => 'plaintext harus 16 byte atau 16 karakter.'
+            ]);
+        }
+
+        // validation cipkerkey
+        if (!$request->cipherkey) {
+            return response()->json([
+                'success' => '0',
+                'cipherkey' => 'cipherkey tidak ditemukan.'
+            ]);
+        } elseif (strlen($request->cipherkey) != 16) {
+            return response()->json([
+                'success' => '0',
+                'cipherkey' => 'cipherkey harus 16 byte atau 16 karakter.'
+            ]);
+        }
+        
         $plaintextHex = $this->plaintextToHex($plaintext);
         $cipherkeyHex = $this->cipherkeyToHex($cipherkey);
+
+        /**
+         * Key Sckedule
+         */
+        $round = '01';
+        $keySchedule[0] = $this->keySchedule($cipherkeyHex,$round);
+        
+        for ($i=1; $i < 10; $i++) { 
+            $round = $this->roundConstant($i);
+            $keySchedule[$i] = $this->keySchedule($keySchedule[$i-1],$round);
+        }
 
         /**
          * Initial Round
@@ -438,23 +540,61 @@ class CryptographyController extends Controller
          * Round 1 - 9
          */
 
-        // SubBytes
+        for ($i=0; $i < 9; $i++) { 
+            // SubBytes
+            $state = $this->subBytes($state);
+            
+            // ShiftRows
+            $state = $this->shiftRows($state);
+            
+            // MixColumn
+            $state = $this->newMixColumn($state);
+
+            // AddRoundKey
+            $state = $this->addRoundKey($state, $keySchedule[$i]);
+        }
+
+        /**
+         * Final Round
+         */
+
+         // SubBytes
         $state = $this->subBytes($state);
         
         // ShiftRows
         $state = $this->shiftRows($state);
         
-        // MixColumn
-        $state = $this->newMixColumn($state);
+        // AddRoundKey
+        $state = $this->addRoundKey($state, $keySchedule[9]);
+
+        /**
+         * Finish
+         */
         
-
-        // $state = str_pad(decbin(hexdec('66')), 8, "0", STR_PAD_LEFT);
-
-        // $state = 1 ^ 1;
+        $ciphertext = $this->ciphertext($state);
 
         return response()->json([
-            'state' => $state
+            'ciphertext' => $ciphertext
         ]);
+    }
+
+    public function roundConstant($key)
+    {
+        $roundConstant = array(
+            '01',
+            '02',
+            '04',
+            '08',
+            '10',
+            '20',
+            '40',
+            '80',
+            '1B',
+            '36'
+        );
+
+        return $roundConstant[$key];
+
     }
 
     public function XOR4($key)
@@ -1511,38 +1651,5 @@ class CryptographyController extends Controller
         );
         
         return $multiply03[$key];
-    }
-
-    public function polinomMatrix()
-    {
-        $polinomMatrix = [
-            [
-                '02',
-                '01',
-                '01',
-                '03'
-            ],
-            [
-                '03',
-                '02',
-                '01',
-                '01'
-            ],
-            [
-                '01',
-                '03',
-                '02',
-                '01'
-            ],
-            [
-                '01',
-                '01',
-                '03',
-                '02'
-            ]
-            
-        ];
-
-        return $polinomMatrix;
     }
 }

@@ -18,7 +18,8 @@ Route::post('/auth/register', 'Api\AuthController@register');
 Route::get('/get/users', 'Api\UserController@index');
 Route::get('/get/website/{id}', 'Api\WebsiteController@getByUserId');
 
-Route::get('/get/cryptograpghy/encryption', 'Api\CryptographyController@encryption');
+Route::get('/get/cryptograpghy/encryption', 'Api\EncryptionController@encryption');
+Route::get('/get/cryptograpghy/decryption', 'Api\DecryptionController@decryption');
 
 // route with access token
 Route::group([
