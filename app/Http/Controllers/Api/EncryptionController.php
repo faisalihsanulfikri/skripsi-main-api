@@ -7,483 +7,6 @@ use App\Http\Controllers\Controller;
 
 class EncryptionController extends Controller
 {
-    public function plaintextToHex($plaintext)
-    {
-        $plaintext = str_split($plaintext);
-
-        $k = 0;
-        for ($i=0; $i < 4; $i++) { 
-            for ($j=0; $j < 4; $j++) { 
-                $plaintextHex[$i][$j] = strtoupper(bin2hex($plaintext[$k]));
-                $k++;
-            }
-        }
-
-        return $plaintextHex;
-    }
-
-    public function cipherkeyToHex($cipherkey)
-    {
-        $cipherkey = str_split($cipherkey);
-
-        $k = 0;
-        for ($i=0; $i < 4; $i++) { 
-            for ($j=0; $j < 4; $j++) { 
-                $cipherkeyHex[$i][$j] = strtoupper(bin2hex($cipherkey[$k]));
-                $k++;
-            }
-        }
-
-        return $cipherkeyHex;
-    }
-
-    public function ciphertext($state)
-    {
-        $k = 0;
-        for ($i=0; $i < 4; $i++) { 
-            for ($j=0; $j < 4; $j++) { 
-                $ciphertext[$k] = $state[$i][$j];
-                $k++;
-            }
-        }
-
-        return implode("",$ciphertext);
-    }
-
-    public function xor($state, $roundKey)
-    {
-        $state = str_pad(decbin(hexdec($state)), 8, "0", STR_PAD_LEFT);
-        $roundKey = str_pad(decbin(hexdec($roundKey)), 8, "0", STR_PAD_LEFT);
-
-        $state = str_split($state);
-        $roundKey = str_split($roundKey);
-
-        for ($i=0; $i < 8; $i++) { 
-            $data[$i] = (int)$state[$i] ^ (int)$roundKey[$i];
-        }
-
-        $res = '';
-
-        foreach ($data as $j => $el) {
-            $res = $res.$el;
-        }
-
-        return dechex(bindec($res));
-    }
-
-    public function xorMicColumn($bin1,$bin2,$bin3,$bin4)
-    {
-        $bin1 = str_split($bin1);
-        $bin2 = str_split($bin2);
-        $bin3 = str_split($bin3);
-        $bin4 = str_split($bin4);
-
-        for ($i=0; $i < 8; $i++) { 
-            $data[$i] = (int)$bin1[$i] ^ (int)$bin2[$i] ^ (int)$bin3[$i] ^ (int)$bin4[$i];
-        }
-
-        $res = '';
-
-        foreach ($data as $j => $el) {
-            $res = $res.$el;
-        }
-
-        return dechex(bindec($res));
-    }
-
-    public function addRoundKey($state, $roundKey)
-    {
-        for ($i=0; $i < 4; $i++) { 
-            for ($j=0; $j < 4; $j++) {
-                $xor[$i][$j] = $this->xor($state[$i][$j], $roundKey[$i][$j]);
-                $state[$i][$j] = strtoupper(str_pad($xor[$i][$j], 2, "0", STR_PAD_LEFT));
-            }
-        }
-
-        return $state;
-    }
-
-    public function multiply($dataMixColumn)
-    {
-        $state = $dataMixColumn['state'];
-        $matrix = $dataMixColumn['matrix'];
-
-        for ($i=0; $i < 4; $i++) { 
-            for ($j=0; $j < 4; $j++) { 
-                $res[$i][$j] = hexdec($state[0][$j]) * hexdec($matrix[$i][$j]);
-                $str_pad[$i][$j] = str_pad(decbin($res[$i][$j]), 8, "0", STR_PAD_LEFT);
-                $mix[$i][$j] = substr($str_pad[$i][$j], -8);
-            }
-        }
-
-        for ($i=0; $i < 4; $i++) { 
-            $xorData[$i] = $this->xorMicColumn($mix[$i][0],$mix[$i][1],$mix[$i][2],$mix[$i][3]);
-            $xor[$i] = strtoupper(str_pad($xorData[$i], 2, "0", STR_PAD_LEFT));;
-        }
-
-        return $xor;
-    }
-
-    public function subBytes($state)
-    {
-        for ($i=0; $i < 4; $i++) { 
-            for ($j=0; $j < 4; $j++) {
-                $subBytes[$i][$j] = $this->sBox($state[$i][$j]);
-                $state[$i][$j] = strtoupper(str_pad($subBytes[$i][$j], 2, "0", STR_PAD_LEFT));
-            }
-        }
-
-        return $state;
-    }
-
-    public function shiftRows($state)
-    {
-        // segitiga atas
-        for ($i=0; $i < 4; $i++) { 
-            for ($j=0; $j < 4; $j++) {
-                
-                if ($i == 0 && $j <= 3) {
-                    $shiftRows[$i][$j] = $state[$i + $j][$j];
-                }
-
-                if ($i == 1 && $j <= 2) {
-                    $shiftRows[$i][$j] = $state[$i + $j][$j];
-                }
-
-                if ($i == 2 && $j <= 1) {
-                    $shiftRows[$i][$j] = $state[$i + $j][$j];
-                }
-
-                if ($i == 3 && $j <= 0) {
-                    $shiftRows[$i][$j] = $state[$i + $j][$j];
-                }
-            }
-        }
-
-        // segitiga bawah
-        for ($i=0; $i < 4; $i++) { 
-            for ($j=0; $j < 4; $j++) {
-
-                if ($i == 1 && $j > 2) {
-                    $shiftRows[$i][$j] = $state[$i - $i][$j];
-                }
-
-                if ($i == 2 && $j > 1) {
-                    $shiftRows[$i][$j] = $state[$i - 4 + $j][$j];
-                }
-
-                if ($i == 3 && $j > 0) {
-                    $shiftRows[$i][$j] = $state[$i - $i + $j - 1][$j];
-                }
-            }
-        }
-        
-        return $shiftRows;
-    }
-
-    public function newMixColumn($state)
-    {
-        $mix = [];
-
-        // first rows
-        for ($i=0; $i < 4; $i++) { 
-            for ($j=0; $j < 4; $j++) { 
-                if ($j == 0) {
-                    $dataLeft[$i][$j] = substr($this->multiply02($state[$i][$j]),0,1);
-                }
-                if ($j == 1) {
-                    $dataLeft[$i][$j] = substr($this->multiply03($state[$i][$j]),0,1);
-                }
-                if ($j == 2) {
-                    $dataLeft[$i][$j] = substr($state[$i][$j],0,1);
-                }
-                if ($j == 3) {
-                    $dataLeft[$i][$j] = substr($state[$i][$j],0,1);
-                }
-            }
-            $subLeft1[$i] = $this->XOR4($dataLeft[$i][0].$dataLeft[$i][1]);
-            $subLeft2[$i] = $this->XOR4($dataLeft[$i][2].$dataLeft[$i][3]);
-            $mixLeft[$i][0] = $this->XOR4($subLeft1[$i].$subLeft2[$i]);
-        }
-
-        for ($i=0; $i < 4; $i++) { 
-            for ($j=0; $j < 4; $j++) { 
-                if ($j == 0) {
-                    $dataRight[$i][$j] = substr($this->multiply02($state[$i][$j]),-1);
-                }
-                if ($j == 1) {
-                    $dataRight[$i][$j] = substr($this->multiply03($state[$i][$j]),-1);
-                }
-                if ($j == 2) {
-                    $dataRight[$i][$j] = substr($state[$i][$j],-1);
-                }
-                if ($j == 3) {
-                    $dataRight[$i][$j] = substr($state[$i][$j],-1);
-                }
-            }
-            $subRight1[$i] = $this->XOR4($dataRight[$i][0].$dataRight[$i][1]);
-            $subRight2[$i] = $this->XOR4($dataRight[$i][2].$dataRight[$i][3]);
-            $mixRight[$i][0] = $this->XOR4($subRight1[$i].$subRight2[$i]);
-        }
-        
-        for ($i=0; $i < 4; $i++) { 
-            $mix[$i][0] = $mixLeft[$i][0].$mixRight[$i][0];
-        }
-
-        // second rows
-        for ($i=0; $i < 4; $i++) {
-            for ($j=0; $j < 4; $j++) {
-                if ($j < 3) {
-                    $secondState[$i][$j] = $state[$i][$j+1];
-                }
-                if ($j == 3) {
-                    $secondState[$i][$j] = $state[$i][$j-3];
-                }
-            }
-        }
-
-        for ($i=0; $i < 4; $i++) { 
-            for ($j=0; $j < 4; $j++) { 
-                if ($j == 0) {
-                    $dataLeft[$i][$j] = substr($this->multiply02($secondState[$i][$j]),0,1);
-                }
-                if ($j == 1) {
-                    $dataLeft[$i][$j] = substr($this->multiply03($secondState[$i][$j]),0,1);
-                }
-                if ($j == 2) {
-                    $dataLeft[$i][$j] = substr($secondState[$i][$j],0,1);
-                }
-                if ($j == 3) {
-                    $dataLeft[$i][$j] = substr($secondState[$i][$j],0,1);
-                }
-            }
-            $subLeft1[$i] = $this->XOR4($dataLeft[$i][0].$dataLeft[$i][1]);
-            $subLeft2[$i] = $this->XOR4($dataLeft[$i][2].$dataLeft[$i][3]);
-            $mixLeft[$i][1] = $this->XOR4($subLeft1[$i].$subLeft2[$i]);
-        }
-
-        for ($i=0; $i < 4; $i++) { 
-            for ($j=0; $j < 4; $j++) { 
-                if ($j == 0) {
-                    $dataRight[$i][$j] = substr($this->multiply02($secondState[$i][$j]),-1);
-                }
-                if ($j == 1) {
-                    $dataRight[$i][$j] = substr($this->multiply03($secondState[$i][$j]),-1);
-                }
-                if ($j == 2) {
-                    $dataRight[$i][$j] = substr($secondState[$i][$j],-1);
-                }
-                if ($j == 3) {
-                    $dataRight[$i][$j] = substr($secondState[$i][$j],-1);
-                }
-            }
-            $subRight1[$i] = $this->XOR4($dataRight[$i][0].$dataRight[$i][1]);
-            $subRight2[$i] = $this->XOR4($dataRight[$i][2].$dataRight[$i][3]);
-            $mixRight[$i][1] = $this->XOR4($subRight1[$i].$subRight2[$i]);
-        }
-
-        for ($i=0; $i < 4; $i++) { 
-            $mix[$i][1] = $mixLeft[$i][1].$mixRight[$i][1];
-        }
-
-        // third rows
-        for ($i=0; $i < 4; $i++) {
-            for ($j=0; $j < 4; $j++) {
-                if ($j < 3) {
-                    $thirdState[$i][$j] = $secondState[$i][$j+1];
-                }
-                if ($j == 3) {
-                    $thirdState[$i][$j] = $secondState[$i][$j-3];
-                }
-            }
-        }
-
-        for ($i=0; $i < 4; $i++) { 
-            for ($j=0; $j < 4; $j++) { 
-                if ($j == 0) {
-                    $dataLeft[$i][$j] = substr($this->multiply02($thirdState[$i][$j]),0,1);
-                }
-                if ($j == 1) {
-                    $dataLeft[$i][$j] = substr($this->multiply03($thirdState[$i][$j]),0,1);
-                }
-                if ($j == 2) {
-                    $dataLeft[$i][$j] = substr($thirdState[$i][$j],0,1);
-                }
-                if ($j == 3) {
-                    $dataLeft[$i][$j] = substr($thirdState[$i][$j],0,1);
-                }
-            }
-            $subLeft1[$i] = $this->XOR4($dataLeft[$i][0].$dataLeft[$i][1]);
-            $subLeft2[$i] = $this->XOR4($dataLeft[$i][2].$dataLeft[$i][3]);
-            $mixLeft[$i][2] = $this->XOR4($subLeft1[$i].$subLeft2[$i]);
-        }
-
-        for ($i=0; $i < 4; $i++) { 
-            for ($j=0; $j < 4; $j++) { 
-                if ($j == 0) {
-                    $dataRight[$i][$j] = substr($this->multiply02($thirdState[$i][$j]),-1);
-                }
-                if ($j == 1) {
-                    $dataRight[$i][$j] = substr($this->multiply03($thirdState[$i][$j]),-1);
-                }
-                if ($j == 2) {
-                    $dataRight[$i][$j] = substr($thirdState[$i][$j],-1);
-                }
-                if ($j == 3) {
-                    $dataRight[$i][$j] = substr($thirdState[$i][$j],-1);
-                }
-            }
-            $subRight1[$i] = $this->XOR4($dataRight[$i][0].$dataRight[$i][1]);
-            $subRight2[$i] = $this->XOR4($dataRight[$i][2].$dataRight[$i][3]);
-            $mixRight[$i][2] = $this->XOR4($subRight1[$i].$subRight2[$i]);
-        }
-
-        for ($i=0; $i < 4; $i++) { 
-            $mix[$i][2] = $mixLeft[$i][2].$mixRight[$i][2];
-        }
-
-        // fourth rows
-        for ($i=0; $i < 4; $i++) {
-            for ($j=0; $j < 4; $j++) {
-                if ($j < 3) {
-                    $fourthState[$i][$j] = $thirdState[$i][$j+1];
-                }
-                if ($j == 3) {
-                    $fourthState[$i][$j] = $thirdState[$i][$j-3];
-                }
-            }
-        }
-
-        for ($i=0; $i < 4; $i++) { 
-            for ($j=0; $j < 4; $j++) { 
-                if ($j == 0) {
-                    $dataLeft[$i][$j] = substr($this->multiply02($fourthState[$i][$j]),0,1);
-                }
-                if ($j == 1) {
-                    $dataLeft[$i][$j] = substr($this->multiply03($fourthState[$i][$j]),0,1);
-                }
-                if ($j == 2) {
-                    $dataLeft[$i][$j] = substr($fourthState[$i][$j],0,1);
-                }
-                if ($j == 3) {
-                    $dataLeft[$i][$j] = substr($fourthState[$i][$j],0,1);
-                }
-            }
-            $subLeft1[$i] = $this->XOR4($dataLeft[$i][0].$dataLeft[$i][1]);
-            $subLeft2[$i] = $this->XOR4($dataLeft[$i][2].$dataLeft[$i][3]);
-            $mixLeft[$i][3] = $this->XOR4($subLeft1[$i].$subLeft2[$i]);
-        }
-
-        for ($i=0; $i < 4; $i++) { 
-            for ($j=0; $j < 4; $j++) { 
-                if ($j == 0) {
-                    $dataRight[$i][$j] = substr($this->multiply02($fourthState[$i][$j]),-1);
-                }
-                if ($j == 1) {
-                    $dataRight[$i][$j] = substr($this->multiply03($fourthState[$i][$j]),-1);
-                }
-                if ($j == 2) {
-                    $dataRight[$i][$j] = substr($fourthState[$i][$j],-1);
-                }
-                if ($j == 3) {
-                    $dataRight[$i][$j] = substr($fourthState[$i][$j],-1);
-                }
-            }
-            $subRight1[$i] = $this->XOR4($dataRight[$i][0].$dataRight[$i][1]);
-            $subRight2[$i] = $this->XOR4($dataRight[$i][2].$dataRight[$i][3]);
-            $mixRight[$i][3] = $this->XOR4($subRight1[$i].$subRight2[$i]);
-        }
-        
-        for ($i=0; $i < 4; $i++) { 
-            $mix[$i][3] = $mixLeft[$i][3].$mixRight[$i][3];
-        }
-
-        return $mix;
-    }
-
-    public function keySchedule($key, $round)
-    {
-        for ($i=0; $i < 4; $i++) { 
-            for ($j=0; $j < 4; $j++) { 
-                if ($i == 0 && $j == 0) {
-                    $part = substr($key[$i][$j],0,1);
-                    $getRound = substr($round,0,1);
-                    $sub = substr($this->sBox($key[$i+3][$j+1]),0,1);
-                    $subSchedule = $this->XOR4($sub.$part);
-                    $keyLSchedule[$i][$j] = $this->XOR4($subSchedule.$getRound);
-                }
-
-                if ($i == 0 && $j > 0 && $j < 3) {
-                    $part = substr($key[$i][$j],0,1);
-                    $sub = substr($this->sBox($key[$i+3][$j+1]),0,1);
-                    $keyLSchedule[$i][$j] = $this->XOR4($sub.$part);
-                }
-
-                if ($i == 0 && $j == 3) {
-                    $part = substr($key[$i][$j],0,1);
-                    $sub = substr($this->sBox($key[$i+3][$j-3]),0,1);
-                    $keyLSchedule[$i][$j] = $this->XOR4($sub.$part);
-                }
-
-                if ($i > 0) {
-                    $before = substr($keyLSchedule[$i-1][$j],0,1);
-                    $part = substr($key[$i][$j],0,1);
-                    $keyLSchedule[$i][$j] = $this->XOR4($before.$part);
-                }
-            }
-        }
-
-        for ($i=0; $i < 4; $i++) { 
-            for ($j=0; $j < 4; $j++) { 
-                if ($i == 0 && $j == 0) {
-                    $part = substr($key[$i][$j],-1);
-                    $getRound = substr($round,-1);
-                    $sub = substr($this->sBox($key[$i+3][$j+1]),-1);
-                    $subSchedule = $this->XOR4($sub.$part);
-                    $keyRSchedule[$i][$j] = $this->XOR4($subSchedule.$getRound);
-                }
-
-                if ($i == 0 && $j > 0 && $j < 3) {
-                    $part = substr($key[$i][$j],-1);
-                    $sub = substr($this->sBox($key[$i+3][$j+1]),-1);
-                    $keyRSchedule[$i][$j] = $this->XOR4($sub.$part);
-                }
-
-                if ($i == 0 && $j == 3) {
-                    $part = substr($key[$i][$j],-1);
-                    $sub = substr($this->sBox($key[$i+3][$j-3]),-1);
-                    $keyRSchedule[$i][$j] = $this->XOR4($sub.$part);
-                }
-
-                if ($i > 0) {
-                    $before = substr($keyRSchedule[$i-1][$j],-1);
-                    $part = substr($key[$i][$j],-1);
-                    $keyRSchedule[$i][$j] = $this->XOR4($before.$part);
-                }
-            }
-        }
-
-        for ($i=0; $i < 4; $i++) { 
-            for ($j=0; $j < 4; $j++) { 
-                if ($i == 0 && $j == 0) {
-                    $keySchedule[$i][$j] = $keyLSchedule[$i][$j].$keyRSchedule[$i][$j];
-                }
-                if ($i == 0 && $j > 0 && $j < 3) {
-                    $keySchedule[$i][$j] = $keyLSchedule[$i][$j].$keyRSchedule[$i][$j];
-                }
-                if ($i == 0 && $j == 3) {
-                    $keySchedule[$i][$j] = $keyLSchedule[$i][$j].$keyRSchedule[$i][$j];
-                }
-                if ($i > 0) {
-                    $keySchedule[$i][$j] = $keyLSchedule[$i][$j].$keyRSchedule[$i][$j];
-                }
-                
-            }
-        }
-        
-        return $keySchedule;
-    }
-
     public function encryption(Request $request)
     {
         $plaintext = $request->plaintext;
@@ -548,7 +71,7 @@ class EncryptionController extends Controller
             $state = $this->shiftRows($state);
             
             // MixColumn
-            $state = $this->newMixColumn($state);
+            $state = $this->mixColumn($state);
 
             // AddRoundKey
             $state = $this->addRoundKey($state, $keySchedule[$i]);
@@ -578,6 +101,470 @@ class EncryptionController extends Controller
         ]);
     }
 
+    public function plaintextToHex($plaintext)
+    {
+        $plaintext = str_split($plaintext);
+
+        $k = 0;
+        for ($i=0; $i < 4; $i++) { 
+            for ($j=0; $j < 4; $j++) { 
+                $plaintextHex[$i][$j] = strtoupper(bin2hex($plaintext[$k]));
+                $k++;
+            }
+        }
+
+        return $plaintextHex;
+    }
+
+    public function cipherkeyToHex($cipherkey)
+    {
+        $cipherkey = str_split($cipherkey);
+
+        $k = 0;
+        for ($i=0; $i < 4; $i++) { 
+            for ($j=0; $j < 4; $j++) { 
+                $cipherkeyHex[$i][$j] = strtoupper(bin2hex($cipherkey[$k]));
+                $k++;
+            }
+        }
+
+        return $cipherkeyHex;
+    }
+
+    public function keySchedule($key, $round)
+    {
+        for ($i=0; $i < 4; $i++) { 
+            for ($j=0; $j < 4; $j++) { 
+                if ($i == 0 && $j == 0) {
+                    $part = substr($key[$i][$j],0,1);
+                    $getRound = substr($round,0,1);
+                    $sub = substr($this->sBox($key[$i+3][$j+1]),0,1);
+                    $subSchedule = $this->xorCalculate($sub.$part);
+                    $keyLSchedule[$i][$j] = $this->xorCalculate($subSchedule.$getRound);
+                }
+
+                if ($i == 0 && $j > 0 && $j < 3) {
+                    $part = substr($key[$i][$j],0,1);
+                    $sub = substr($this->sBox($key[$i+3][$j+1]),0,1);
+                    $keyLSchedule[$i][$j] = $this->xorCalculate($sub.$part);
+                }
+
+                if ($i == 0 && $j == 3) {
+                    $part = substr($key[$i][$j],0,1);
+                    $sub = substr($this->sBox($key[$i+3][$j-3]),0,1);
+                    $keyLSchedule[$i][$j] = $this->xorCalculate($sub.$part);
+                }
+
+                if ($i > 0) {
+                    $before = substr($keyLSchedule[$i-1][$j],0,1);
+                    $part = substr($key[$i][$j],0,1);
+                    $keyLSchedule[$i][$j] = $this->xorCalculate($before.$part);
+                }
+            }
+        }
+
+        for ($i=0; $i < 4; $i++) { 
+            for ($j=0; $j < 4; $j++) { 
+                if ($i == 0 && $j == 0) {
+                    $part = substr($key[$i][$j],-1);
+                    $getRound = substr($round,-1);
+                    $sub = substr($this->sBox($key[$i+3][$j+1]),-1);
+                    $subSchedule = $this->xorCalculate($sub.$part);
+                    $keyRSchedule[$i][$j] = $this->xorCalculate($subSchedule.$getRound);
+                }
+
+                if ($i == 0 && $j > 0 && $j < 3) {
+                    $part = substr($key[$i][$j],-1);
+                    $sub = substr($this->sBox($key[$i+3][$j+1]),-1);
+                    $keyRSchedule[$i][$j] = $this->xorCalculate($sub.$part);
+                }
+
+                if ($i == 0 && $j == 3) {
+                    $part = substr($key[$i][$j],-1);
+                    $sub = substr($this->sBox($key[$i+3][$j-3]),-1);
+                    $keyRSchedule[$i][$j] = $this->xorCalculate($sub.$part);
+                }
+
+                if ($i > 0) {
+                    $before = substr($keyRSchedule[$i-1][$j],-1);
+                    $part = substr($key[$i][$j],-1);
+                    $keyRSchedule[$i][$j] = $this->xorCalculate($before.$part);
+                }
+            }
+        }
+
+        for ($i=0; $i < 4; $i++) { 
+            for ($j=0; $j < 4; $j++) { 
+                if ($i == 0 && $j == 0) {
+                    $keySchedule[$i][$j] = $keyLSchedule[$i][$j].$keyRSchedule[$i][$j];
+                }
+                if ($i == 0 && $j > 0 && $j < 3) {
+                    $keySchedule[$i][$j] = $keyLSchedule[$i][$j].$keyRSchedule[$i][$j];
+                }
+                if ($i == 0 && $j == 3) {
+                    $keySchedule[$i][$j] = $keyLSchedule[$i][$j].$keyRSchedule[$i][$j];
+                }
+                if ($i > 0) {
+                    $keySchedule[$i][$j] = $keyLSchedule[$i][$j].$keyRSchedule[$i][$j];
+                }
+                
+            }
+        }
+        
+        return $keySchedule;
+    }
+
+    public function addRoundKey($state, $roundKey)
+    {
+        for ($i=0; $i < 4; $i++) { 
+            for ($j=0; $j < 4; $j++) {
+                $xor[$i][$j] = $this->xor($state[$i][$j], $roundKey[$i][$j]);
+                $state[$i][$j] = strtoupper(str_pad($xor[$i][$j], 2, "0", STR_PAD_LEFT));
+            }
+        }
+
+        return $state;
+    }
+
+    public function subBytes($state)
+    {
+        for ($i=0; $i < 4; $i++) { 
+            for ($j=0; $j < 4; $j++) {
+                $subBytes[$i][$j] = $this->sBox($state[$i][$j]);
+                $state[$i][$j] = strtoupper(str_pad($subBytes[$i][$j], 2, "0", STR_PAD_LEFT));
+            }
+        }
+
+        return $state;
+    }
+
+    public function shiftRows($state)
+    {
+        // segitiga atas
+        for ($i=0; $i < 4; $i++) { 
+            for ($j=0; $j < 4; $j++) {
+                
+                if ($i == 0 && $j <= 3) {
+                    $shiftRows[$i][$j] = $state[$i + $j][$j];
+                }
+
+                if ($i == 1 && $j <= 2) {
+                    $shiftRows[$i][$j] = $state[$i + $j][$j];
+                }
+
+                if ($i == 2 && $j <= 1) {
+                    $shiftRows[$i][$j] = $state[$i + $j][$j];
+                }
+
+                if ($i == 3 && $j <= 0) {
+                    $shiftRows[$i][$j] = $state[$i + $j][$j];
+                }
+            }
+        }
+
+        // segitiga bawah
+        for ($i=0; $i < 4; $i++) { 
+            for ($j=0; $j < 4; $j++) {
+
+                if ($i == 1 && $j > 2) {
+                    $shiftRows[$i][$j] = $state[$i - $i][$j];
+                }
+
+                if ($i == 2 && $j > 1) {
+                    $shiftRows[$i][$j] = $state[$i - 4 + $j][$j];
+                }
+
+                if ($i == 3 && $j > 0) {
+                    $shiftRows[$i][$j] = $state[$i - $i + $j - 1][$j];
+                }
+            }
+        }
+        
+        return $shiftRows;
+    }
+
+    public function mixColumn($state)
+    {
+        $mix = [];
+
+        // first rows
+        for ($i=0; $i < 4; $i++) { 
+            for ($j=0; $j < 4; $j++) { 
+                if ($j == 0) {
+                    $dataLeft[$i][$j] = substr($this->multiply02($state[$i][$j]),0,1);
+                }
+                if ($j == 1) {
+                    $dataLeft[$i][$j] = substr($this->multiply03($state[$i][$j]),0,1);
+                }
+                if ($j == 2) {
+                    $dataLeft[$i][$j] = substr($state[$i][$j],0,1);
+                }
+                if ($j == 3) {
+                    $dataLeft[$i][$j] = substr($state[$i][$j],0,1);
+                }
+            }
+            $subLeft1[$i] = $this->xorCalculate($dataLeft[$i][0].$dataLeft[$i][1]);
+            $subLeft2[$i] = $this->xorCalculate($dataLeft[$i][2].$dataLeft[$i][3]);
+            $mixLeft[$i][0] = $this->xorCalculate($subLeft1[$i].$subLeft2[$i]);
+        }
+
+        for ($i=0; $i < 4; $i++) { 
+            for ($j=0; $j < 4; $j++) { 
+                if ($j == 0) {
+                    $dataRight[$i][$j] = substr($this->multiply02($state[$i][$j]),-1);
+                }
+                if ($j == 1) {
+                    $dataRight[$i][$j] = substr($this->multiply03($state[$i][$j]),-1);
+                }
+                if ($j == 2) {
+                    $dataRight[$i][$j] = substr($state[$i][$j],-1);
+                }
+                if ($j == 3) {
+                    $dataRight[$i][$j] = substr($state[$i][$j],-1);
+                }
+            }
+            $subRight1[$i] = $this->xorCalculate($dataRight[$i][0].$dataRight[$i][1]);
+            $subRight2[$i] = $this->xorCalculate($dataRight[$i][2].$dataRight[$i][3]);
+            $mixRight[$i][0] = $this->xorCalculate($subRight1[$i].$subRight2[$i]);
+        }
+        
+        for ($i=0; $i < 4; $i++) { 
+            $mix[$i][0] = $mixLeft[$i][0].$mixRight[$i][0];
+        }
+
+        // second rows
+        for ($i=0; $i < 4; $i++) {
+            for ($j=0; $j < 4; $j++) {
+                if ($j < 3) {
+                    $secondState[$i][$j] = $state[$i][$j+1];
+                }
+                if ($j == 3) {
+                    $secondState[$i][$j] = $state[$i][$j-3];
+                }
+            }
+        }
+
+        for ($i=0; $i < 4; $i++) { 
+            for ($j=0; $j < 4; $j++) { 
+                if ($j == 0) {
+                    $dataLeft[$i][$j] = substr($this->multiply02($secondState[$i][$j]),0,1);
+                }
+                if ($j == 1) {
+                    $dataLeft[$i][$j] = substr($this->multiply03($secondState[$i][$j]),0,1);
+                }
+                if ($j == 2) {
+                    $dataLeft[$i][$j] = substr($secondState[$i][$j],0,1);
+                }
+                if ($j == 3) {
+                    $dataLeft[$i][$j] = substr($secondState[$i][$j],0,1);
+                }
+            }
+            $subLeft1[$i] = $this->xorCalculate($dataLeft[$i][0].$dataLeft[$i][1]);
+            $subLeft2[$i] = $this->xorCalculate($dataLeft[$i][2].$dataLeft[$i][3]);
+            $mixLeft[$i][1] = $this->xorCalculate($subLeft1[$i].$subLeft2[$i]);
+        }
+
+        for ($i=0; $i < 4; $i++) { 
+            for ($j=0; $j < 4; $j++) { 
+                if ($j == 0) {
+                    $dataRight[$i][$j] = substr($this->multiply02($secondState[$i][$j]),-1);
+                }
+                if ($j == 1) {
+                    $dataRight[$i][$j] = substr($this->multiply03($secondState[$i][$j]),-1);
+                }
+                if ($j == 2) {
+                    $dataRight[$i][$j] = substr($secondState[$i][$j],-1);
+                }
+                if ($j == 3) {
+                    $dataRight[$i][$j] = substr($secondState[$i][$j],-1);
+                }
+            }
+            $subRight1[$i] = $this->xorCalculate($dataRight[$i][0].$dataRight[$i][1]);
+            $subRight2[$i] = $this->xorCalculate($dataRight[$i][2].$dataRight[$i][3]);
+            $mixRight[$i][1] = $this->xorCalculate($subRight1[$i].$subRight2[$i]);
+        }
+
+        for ($i=0; $i < 4; $i++) { 
+            $mix[$i][1] = $mixLeft[$i][1].$mixRight[$i][1];
+        }
+
+        // third rows
+        for ($i=0; $i < 4; $i++) {
+            for ($j=0; $j < 4; $j++) {
+                if ($j < 3) {
+                    $thirdState[$i][$j] = $secondState[$i][$j+1];
+                }
+                if ($j == 3) {
+                    $thirdState[$i][$j] = $secondState[$i][$j-3];
+                }
+            }
+        }
+
+        for ($i=0; $i < 4; $i++) { 
+            for ($j=0; $j < 4; $j++) { 
+                if ($j == 0) {
+                    $dataLeft[$i][$j] = substr($this->multiply02($thirdState[$i][$j]),0,1);
+                }
+                if ($j == 1) {
+                    $dataLeft[$i][$j] = substr($this->multiply03($thirdState[$i][$j]),0,1);
+                }
+                if ($j == 2) {
+                    $dataLeft[$i][$j] = substr($thirdState[$i][$j],0,1);
+                }
+                if ($j == 3) {
+                    $dataLeft[$i][$j] = substr($thirdState[$i][$j],0,1);
+                }
+            }
+            $subLeft1[$i] = $this->xorCalculate($dataLeft[$i][0].$dataLeft[$i][1]);
+            $subLeft2[$i] = $this->xorCalculate($dataLeft[$i][2].$dataLeft[$i][3]);
+            $mixLeft[$i][2] = $this->xorCalculate($subLeft1[$i].$subLeft2[$i]);
+        }
+
+        for ($i=0; $i < 4; $i++) { 
+            for ($j=0; $j < 4; $j++) { 
+                if ($j == 0) {
+                    $dataRight[$i][$j] = substr($this->multiply02($thirdState[$i][$j]),-1);
+                }
+                if ($j == 1) {
+                    $dataRight[$i][$j] = substr($this->multiply03($thirdState[$i][$j]),-1);
+                }
+                if ($j == 2) {
+                    $dataRight[$i][$j] = substr($thirdState[$i][$j],-1);
+                }
+                if ($j == 3) {
+                    $dataRight[$i][$j] = substr($thirdState[$i][$j],-1);
+                }
+            }
+            $subRight1[$i] = $this->xorCalculate($dataRight[$i][0].$dataRight[$i][1]);
+            $subRight2[$i] = $this->xorCalculate($dataRight[$i][2].$dataRight[$i][3]);
+            $mixRight[$i][2] = $this->xorCalculate($subRight1[$i].$subRight2[$i]);
+        }
+
+        for ($i=0; $i < 4; $i++) { 
+            $mix[$i][2] = $mixLeft[$i][2].$mixRight[$i][2];
+        }
+
+        // fourth rows
+        for ($i=0; $i < 4; $i++) {
+            for ($j=0; $j < 4; $j++) {
+                if ($j < 3) {
+                    $fourthState[$i][$j] = $thirdState[$i][$j+1];
+                }
+                if ($j == 3) {
+                    $fourthState[$i][$j] = $thirdState[$i][$j-3];
+                }
+            }
+        }
+
+        for ($i=0; $i < 4; $i++) { 
+            for ($j=0; $j < 4; $j++) { 
+                if ($j == 0) {
+                    $dataLeft[$i][$j] = substr($this->multiply02($fourthState[$i][$j]),0,1);
+                }
+                if ($j == 1) {
+                    $dataLeft[$i][$j] = substr($this->multiply03($fourthState[$i][$j]),0,1);
+                }
+                if ($j == 2) {
+                    $dataLeft[$i][$j] = substr($fourthState[$i][$j],0,1);
+                }
+                if ($j == 3) {
+                    $dataLeft[$i][$j] = substr($fourthState[$i][$j],0,1);
+                }
+            }
+            $subLeft1[$i] = $this->xorCalculate($dataLeft[$i][0].$dataLeft[$i][1]);
+            $subLeft2[$i] = $this->xorCalculate($dataLeft[$i][2].$dataLeft[$i][3]);
+            $mixLeft[$i][3] = $this->xorCalculate($subLeft1[$i].$subLeft2[$i]);
+        }
+
+        for ($i=0; $i < 4; $i++) { 
+            for ($j=0; $j < 4; $j++) { 
+                if ($j == 0) {
+                    $dataRight[$i][$j] = substr($this->multiply02($fourthState[$i][$j]),-1);
+                }
+                if ($j == 1) {
+                    $dataRight[$i][$j] = substr($this->multiply03($fourthState[$i][$j]),-1);
+                }
+                if ($j == 2) {
+                    $dataRight[$i][$j] = substr($fourthState[$i][$j],-1);
+                }
+                if ($j == 3) {
+                    $dataRight[$i][$j] = substr($fourthState[$i][$j],-1);
+                }
+            }
+            $subRight1[$i] = $this->xorCalculate($dataRight[$i][0].$dataRight[$i][1]);
+            $subRight2[$i] = $this->xorCalculate($dataRight[$i][2].$dataRight[$i][3]);
+            $mixRight[$i][3] = $this->xorCalculate($subRight1[$i].$subRight2[$i]);
+        }
+        
+        for ($i=0; $i < 4; $i++) { 
+            $mix[$i][3] = $mixLeft[$i][3].$mixRight[$i][3];
+        }
+
+        return $mix;
+    }
+
+    public function xor($state, $roundKey)
+    {
+        $state = str_pad(decbin(hexdec($state)), 8, "0", STR_PAD_LEFT);
+        $roundKey = str_pad(decbin(hexdec($roundKey)), 8, "0", STR_PAD_LEFT);
+
+        $state = str_split($state);
+        $roundKey = str_split($roundKey);
+
+        for ($i=0; $i < 8; $i++) { 
+            $data[$i] = (int)$state[$i] ^ (int)$roundKey[$i];
+        }
+
+        $res = '';
+
+        foreach ($data as $j => $el) {
+            $res = $res.$el;
+        }
+
+        return dechex(bindec($res));
+    }
+
+    public function xorMicColumn($bin1,$bin2,$bin3,$bin4)
+    {
+        $bin1 = str_split($bin1);
+        $bin2 = str_split($bin2);
+        $bin3 = str_split($bin3);
+        $bin4 = str_split($bin4);
+
+        for ($i=0; $i < 8; $i++) { 
+            $data[$i] = (int)$bin1[$i] ^ (int)$bin2[$i] ^ (int)$bin3[$i] ^ (int)$bin4[$i];
+        }
+
+        $res = '';
+
+        foreach ($data as $j => $el) {
+            $res = $res.$el;
+        }
+
+        return dechex(bindec($res));
+    }    
+
+    public function multiply($dataMixColumn)
+    {
+        $state = $dataMixColumn['state'];
+        $matrix = $dataMixColumn['matrix'];
+
+        for ($i=0; $i < 4; $i++) { 
+            for ($j=0; $j < 4; $j++) { 
+                $res[$i][$j] = hexdec($state[0][$j]) * hexdec($matrix[$i][$j]);
+                $str_pad[$i][$j] = str_pad(decbin($res[$i][$j]), 8, "0", STR_PAD_LEFT);
+                $mix[$i][$j] = substr($str_pad[$i][$j], -8);
+            }
+        }
+
+        for ($i=0; $i < 4; $i++) { 
+            $xorData[$i] = $this->xorMicColumn($mix[$i][0],$mix[$i][1],$mix[$i][2],$mix[$i][3]);
+            $xor[$i] = strtoupper(str_pad($xorData[$i], 2, "0", STR_PAD_LEFT));;
+        }
+
+        return $xor;
+    }
+
     public function roundConstant($key)
     {
         $roundConstant = array(
@@ -597,9 +584,9 @@ class EncryptionController extends Controller
 
     }
 
-    public function XOR4($key)
+    public function xorCalculate($key)
     {
-        $xor4 = array(
+        $xorCalculate = array(
             '00' => '0',
             '01' => '1',
             '02' => '2',
@@ -858,7 +845,7 @@ class EncryptionController extends Controller
             'FF' => '0'
         );
         
-        return $xor4[$key];
+        return $xorCalculate[$key];
     }
 
     public function sBox($key)
@@ -1651,5 +1638,18 @@ class EncryptionController extends Controller
         );
         
         return $multiply03[$key];
+    }
+
+    public function ciphertext($state)
+    {
+        $k = 0;
+        for ($i=0; $i < 4; $i++) { 
+            for ($j=0; $j < 4; $j++) { 
+                $ciphertext[$k] = $state[$i][$j];
+                $k++;
+            }
+        }
+
+        return implode("",$ciphertext);
     }
 }
