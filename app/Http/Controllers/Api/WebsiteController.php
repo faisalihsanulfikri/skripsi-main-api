@@ -7,7 +7,7 @@ use App\Http\Controllers\Controller;
 
 use DB;
 
-class UserController extends Controller
+class WebsiteController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -16,20 +16,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = DB::connection('mysql')
-                ->table('users')
-                ->select(
-                    'id',
-                    'name',
-                    'email',
-                    'created_at',
-                    'updated_at'
-                )
-                ->get();
-
-        return $users;
-
-        // dd(\Config::get('database.connections'));
+        //
     }
 
     /**
@@ -43,6 +30,36 @@ class UserController extends Controller
         //
     }
 
+    public function getByUserId($id)
+    {
+        // $web = Website('user_id', $id)->first();
+
+        $web = DB::connection('mysql')
+                ->table('websites')
+                ->select(
+                    'id',
+                    'user_id',
+                    'name',
+                    'database',
+                    'username',
+                    'password'
+                )
+                ->first();
+
+        if (!$web) {
+            return response()->json([
+                'error' => 1,
+                'message' => 'data website tidak ditemukan.'
+            ]);
+        }
+
+        return response()->json([
+            'success' => 1,
+            'message' => 'data website ditemukan.',
+            'data' => $web
+        ]);
+    }
+
     /**
      * Display the specified resource.
      *
@@ -51,7 +68,7 @@ class UserController extends Controller
      */
     public function show($id)
     {
-        //
+        # code...
     }
 
     /**
