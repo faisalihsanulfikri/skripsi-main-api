@@ -12,7 +12,7 @@
 */
 
 Route::get('/', function () {
-    return "main-server";
+    return "web main-server";
 });
 
 Auth::routes();
