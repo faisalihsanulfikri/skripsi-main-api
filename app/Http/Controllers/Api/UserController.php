@@ -44,6 +44,16 @@ class UserController extends Controller
     {
         $users = DB::connection('mysql')
                 ->table('users')
+                ->select(
+                    "id",
+                    "name",
+                    "email",                    
+                    "phone",
+                    "address",
+                    "status",
+                    "created_at",
+                    "updated_at",
+                )
                 ->where('id',$id)
                 ->first();
 
@@ -54,13 +64,9 @@ class UserController extends Controller
             ]);
         }
 
-        $users = DB::connection('mysql')
-                ->table('users')
-                ->join('users','use rs.id', '=', 'referral_codes.id_user')
-                ->where('id',$id)
-                ->first();
-
         return response()->json([
+            'success' => 1,
+            'message' => 'data user ditemukan.',
             'data' => $users
         ]);
     }

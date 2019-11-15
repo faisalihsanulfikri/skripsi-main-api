@@ -9,22 +9,11 @@ use DB;
 
 class WebsiteController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function index()
     {
         //
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
     public function store(Request $request)
     {
         //
@@ -32,18 +21,17 @@ class WebsiteController extends Controller
 
     public function getByUserId($id)
     {
-        // $web = Website('user_id', $id)->first();
-
         $web = DB::connection('mysql')
-                ->table('websites')
+                ->table('user_websites as uw')
+                ->join('websites as w','uw.id_website', '=', 'w.id')
                 ->select(
-                    'id',
-                    'user_id',
-                    'name',
-                    'database',
-                    'username',
-                    'password'
+                    'w.domain',
+                    'w.db_name',
+                    'w.db_user',
+                    'w.db_password',
+                    'w.status'
                 )
+                ->where('uw.id_user', $id)
                 ->first();
 
         if (!$web) {
@@ -60,35 +48,16 @@ class WebsiteController extends Controller
         ]);
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function show($id)
     {
         # code...
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function update(Request $request, $id)
     {
         //
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function destroy($id)
     {
         //
