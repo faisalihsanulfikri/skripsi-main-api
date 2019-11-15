@@ -18,6 +18,9 @@ Route::post('/auth/register', 'Api\AuthController@register');
 Route::get('/get/users', 'Api\UserController@index');
 Route::get('/get/website/{id}', 'Api\WebsiteController@getByUserId');
 
+Route::get('/get/cryptograpghy/encryption', 'Api\EncryptionController@encryption');
+Route::get('/get/cryptograpghy/decryption', 'Api\DecryptionController@decryption');
+
 // route with access token
 Route::group([
     'middleware' => 'auth:api'
@@ -29,9 +32,9 @@ Route::group([
     Route::post('/auth/connection', 'Api\AuthController@connection');
 
     /**
-     * Product
+     * User
      */
-    Route::get('/get/product', 'Api\ProductController@index');
+    Route::get('/get/users/{id}', 'Api\UserController@get');
     Route::post('/set/product', 'Api\ProductController@store');
     Route::put('/put/product/{id}', 'Api\ProductController@update');
     Route::delete('/delete/product/{id}', 'Api\ProductController@destroy');

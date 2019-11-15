@@ -60,34 +60,14 @@ class AuthController extends Controller
         return $this->authToken();
     }
 
-    public function register()
-    {
-        $validator = Validator::make($this->request->all(), [
-            'name' => 'required',
-            'email' => 'required|email',
-            'password' => 'required',
-            'c_password' => 'required|same:password',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['error'=>$validator->errors()], 401);            
-        }
-
-        $input = $this->request->all();
-        $input['password'] = bcrypt($input['password']);
-        $user = User::create($input);
-        
-        return $this->authToken();
-    }
-
     public function connection()
     {
         $body = $this->request->all();
 
         $webname = $body['name'];
-        $database = $body['database'];
-        $username = $body['username'];
-        $password = $body['password'];
+        $database = $body['db_name'];
+        $username = $body['db_user'];
+        $password = $body['db_password'];
 
         Config::set('database.connections.tenant.database', $database);
         Config::set('database.connections.tenant.username', $username);

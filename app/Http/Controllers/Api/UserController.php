@@ -16,64 +16,52 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = DB::connection('mysql')
+        $users = [];
+        $getUsers = DB::connection('mysql')
                 ->table('users')
                 ->select(
-                    'id',
-                    'name',
-                    'email',
-                    'created_at',
-                    'updated_at'
+                    "id",
+                    "name",
+                    "email",                    
+                    "phone",
+                    "address",
+                    "status",
+                    "created_at",
+                    "updated_at",
                 )
                 ->get();
 
-        return $users;
+        if (count($getUsers) > 0) {
+            $users = $getUsers;
+        }
 
-        // dd(\Config::get('database.connections'));
+        return response()->json([
+            'data' => $users
+        ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
+    public function get($id)
     {
-        //
-    }
+        $users = DB::connection('mysql')
+                ->table('users')
+                ->where('id',$id)
+                ->first();
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
+        if (!$users) {
+            return response()->json([
+                'error' => 1,
+                'message' => "User tidak ada."
+            ]);
+        }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
+        $users = DB::connection('mysql')
+                ->table('users')
+                ->join('users','use rs.id', '=', 'referral_codes.id_user')
+                ->where('id',$id)
+                ->first();
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        //
+        return response()->json([
+            'data' => $users
+        ]);
     }
 }
