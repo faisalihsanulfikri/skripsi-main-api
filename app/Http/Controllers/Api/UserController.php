@@ -6,14 +6,10 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 
 use DB;
+use App\User;
 
 class UserController extends Controller
-{
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
+{    
     public function index()
     {
         $users = [];
@@ -38,6 +34,11 @@ class UserController extends Controller
         return response()->json([
             'data' => $users
         ]);
+    }
+
+    public function getUser()
+    {
+        return response()->json(auth('api')->user());
     }
 
     public function get($id)

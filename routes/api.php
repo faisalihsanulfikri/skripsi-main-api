@@ -31,6 +31,8 @@ Route::group([
      * payload = authorization data
      */
     Route::post('/auth/connection', 'Api\AuthController@connection');
+
+    Route::get('/user', 'Api\UserController@getUser');
     
     // get user by id
     Route::get('/get/user/{id}', 'Api\UserController@get');
