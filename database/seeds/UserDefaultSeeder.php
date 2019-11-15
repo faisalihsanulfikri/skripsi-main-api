@@ -28,9 +28,9 @@ class UserDefaultSeeder extends Seeder
         $web = new Website;
         $web->domain = "undefine.com";
         $web->subdomain = "undefine";
-        $web->db_name = "skripsi_webhade_tenant";
-        $web->db_user = "root";
-        $web->db_password = "";
+        $web->db_name = env("TENANT_DB_NAME");
+        $web->db_user = env("TENANT_DB_USER");
+        $web->db_password = env("TENANT_DB_PASSWORD");
         $web->status = "active";
         $web->save();
 
