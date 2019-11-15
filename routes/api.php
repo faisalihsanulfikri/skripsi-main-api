@@ -32,9 +32,9 @@ Route::group([
     Route::post('/auth/connection', 'Api\AuthController@connection');
 
     /**
-     * Product
+     * User
      */
-    Route::get('/get/product', 'Api\ProductController@index');
+    Route::get('/get/users/{id}', 'Api\UserController@get');
     Route::post('/set/product', 'Api\ProductController@store');
     Route::put('/put/product/{id}', 'Api\ProductController@update');
     Route::delete('/delete/product/{id}', 'Api\ProductController@destroy');
