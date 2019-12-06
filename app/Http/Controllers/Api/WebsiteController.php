@@ -69,9 +69,14 @@ class WebsiteController extends Controller
         $dbName = $enc->encryption($web->db_name);
         $dbUser = $enc->encryption($web->db_user);
         $dbpass = $enc->encryption($web->db_password);
+        
         $cipher_db_name = $dbName->original['ciphertext'];
         $cipher_db_user = $dbUser->original['ciphertext'];
         $cipher_db_pass = $dbpass->original['ciphertext'];
+
+        $web->db_name = $cipher_db_name;
+        $web->db_user = $cipher_db_user;
+        $web->db_password = $cipher_db_pass;
 
         return response()->json([
             'success' => 1,
