@@ -25,8 +25,6 @@ class WebsiteController extends Controller
     {
         $enc = new EncryptionController;
 
-        // return $enc->testGet();
-
         $web = DB::connection('mysql')
                 ->table('user_websites as uw')
                 ->join('websites as w','uw.id_website', '=', 'w.id')
@@ -48,16 +46,32 @@ class WebsiteController extends Controller
         }
 
         $dataWeb = $web;
+        
+        $plaintext[0] = $web->db_name;
+        $plaintext[1] = $web->db_user;
+        $plaintext[2] = $web->db_password;
 
+        foreach ($plaintext as $i => $el) {
+            if (!$el) {
+                return response()->json([
+                    'success' => '0',
+                    'plaintext' => 'plaintext (db name, db user atau db password) tidak ditemukan.'
+                ]);
+            } elseif (strlen($el) != 16) {
+                return response()->json([
+                    'success' => '0',
+                    'plaintext' => 'plaintext (db name, db user atau db password) harus 16 byte atau 16 karakter.'
+                ]);
+            }
+        }
+        
+
+        $dbName = $enc->encryption($web->db_name);
         $dbUser = $enc->encryption($web->db_user);
         $dbpass = $enc->encryption($web->db_password);
+        $cipher_db_name = $dbName->original['ciphertext'];
         $cipher_db_user = $dbUser->original['ciphertext'];
         $cipher_db_pass = $dbpass->original['ciphertext'];
-
-
-        $web->db_user = $cipher_db_user;
-        $web->db_password = $cipher_db_pass;
-
 
         return response()->json([
             'success' => 1,

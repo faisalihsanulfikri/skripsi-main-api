@@ -7,16 +7,8 @@ use App\Http\Controllers\Controller;
 
 class EncryptionController extends Controller
 {
-    public function testGet()
-    {
-        return "test get";
-    }
-
-
     public function encryption($plaintext)
     {
-        // $plaintext = $request->plaintext;
-        // $cipherkey = $request->cipherkey;
         $cipherkey = "qwerty123456wasd";
 
         // validation plaintext
@@ -29,19 +21,6 @@ class EncryptionController extends Controller
             return response()->json([
                 'success' => '0',
                 'plaintext' => 'plaintext harus 16 byte atau 16 karakter.'
-            ]);
-        }
-
-        // validation cipkerkey
-        if (!$cipherkey) {
-            return response()->json([
-                'success' => '0',
-                'cipherkey' => 'cipherkey tidak ditemukan.'
-            ]);
-        } elseif (strlen($cipherkey) != 16) {
-            return response()->json([
-                'success' => '0',
-                'cipherkey' => 'cipherkey harus 16 byte atau 16 karakter.'
             ]);
         }
         
