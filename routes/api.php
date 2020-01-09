@@ -19,8 +19,8 @@ Route::get('/', function () {
 
 Route::post('/auth/login', 'Api\AuthController@login');
 
-Route::get('/get/cryptograpghy/encryption', 'Api\EncryptionController@encryption');
-Route::get('/get/cryptograpghy/decryption', 'Api\DecryptionController@decryption');
+// Route::get('/get/cryptograpghy/encryption', 'Api\EncryptionController@encryption');
+// Route::get('/decryption', 'Api\DecryptionController@run');
 
 // route with access token
 Route::group([
@@ -39,4 +39,5 @@ Route::group([
 
     // get website by user id
     Route::get('/get/website/{id}', 'Api\WebsiteController@getByUserId');
+    Route::get('/get/decryption', 'Api\DecryptionController@run');
 });

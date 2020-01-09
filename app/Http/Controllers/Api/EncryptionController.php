@@ -7,7 +7,7 @@ use App\Http\Controllers\Controller;
 
 class EncryptionController extends Controller
 {
-    public function encryption($plaintext)
+    public function encryption($plaintext, $cipherkey)
     {
         $cipherkey = "qwerty123456wasd";
 
@@ -1631,11 +1631,15 @@ class EncryptionController extends Controller
         $k = 0;
         for ($i=0; $i < 4; $i++) { 
             for ($j=0; $j < 4; $j++) { 
-                $ciphertext[$k] = $state[$i][$j];
+                $ciphertext[$k] = ($state[$i][$j]);
                 $k++;
             }
         }
 
-        return implode("",$ciphertext);
+        $concate = implode("",$ciphertext);
+
+        $res = utf8_encode(hex2bin($concate));
+
+        return $res;
     }
 }
